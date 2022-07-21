@@ -16,7 +16,7 @@ const app = express()
 dotenv.config();
 
 
-const  deleteMethod = async (request,response)=> {
+const  deleteImage = async (request,response)=> {
   const fileId = request.query.fileId;
   let  trashed = false;
   if(request.query.trashed){
@@ -68,7 +68,7 @@ const getAllfolders = async (request,response)=> {
   }
 }
 
-const  searchByName = async (request,response)=> {
+const searchByName = async (request,response)=> {
   let  trashed = false
   let fileName = ''
   if(request.query.trashed){ trashed = request.query.trashed;}
@@ -101,39 +101,31 @@ const  searchByID = async (request,response)=> {
 const  downloadImage =  (request,response)=> {
   let fileId = ''
   if(request.query.fileId){ fileId = request.query.fileId}
-
   service.files.get({fileId, alt: 'media'}, {responseType: 'stream'})
     .then( res => {
       new Promise((resolve, reject) => {
         const filePath = path.join(__dirname, uuid.v4()+'.png');
-        console.log(`writing to ${filePath}`);
         const dest = fs.createWriteStream(filePath);
         let progress = 0;
         res.data
           .on('end', () => {
-            console.log('Done downloading file.');
             resolve(filePath);
           })
           .on('error', err => {
-            console.error('Error downloading file.');
             reject(err);
-            
           })
           .on('data', d => {
             progress += d.length;
             if (process.stdout.isTTY) {
               process.stdout.clearLine();
               process.stdout.cursorTo(0);
-              process.stdout.write(`Downloaded ${progress} bytes`);
             }
           })
           .pipe(dest);
       });
-
       response.send('File Downloaded Successfully in')
     })
     .catch(err => response.send('Failed to download'))
-
 }
 
 const  details = async (request,response)=> {
@@ -151,8 +143,7 @@ const  details = async (request,response)=> {
 
 const  upload = async (request, response) => {
   if (!request.files) {
-    response.send("File was not found");
-    return;
+   return response.send("File was not found");
   }
   const file = request.files.file;
   const stream = Readable.from(file.data);
@@ -175,7 +166,6 @@ const  upload = async (request, response) => {
   } catch (err) {
     response.send('Failed to upload')
   }
-
 }
 app.use(fileUpload({ 
   limits: { fileSize: 1 * 1024 * 1024 }, //1MB max file(s) size
@@ -191,8 +181,5 @@ app.get('/images',allImages);
 app.get('/folders',getAllfolders);
 app.get('/download-image',downloadImage);
 app.get('/details',details);
-app.delete('/delete',deleteMethod);
-
-
-
+app.delete('/delete',deleteImage);
 app.post('/upload', upload);
