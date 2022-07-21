@@ -1,18 +1,19 @@
 const express = require("express")
-// const { file } = require("googleapis/build/src/apis/file")
+const fileUpload = require("express-fileupload");
+const dotenv = require('dotenv');
 const path = require("path")
 const uuid = require('uuid')
 const fs = require('fs')
-const { Readable } = require('stream');
-// const os = require('os')
-const fileUpload = require("express-fileupload");
+const { Readable } = require('stream')
+const { PORT,PARENT_FOLDER_ID } = require('./config')
+
 
 const {google} = require('googleapis');
 const auth = require('./auth')
 const service = google.drive({version: 'v3', auth})
 
 const app = express()
-
+dotenv.config();
 
 
 const  deleteMethod = async (request,response)=> {
@@ -155,7 +156,7 @@ const  upload = async (request, response) => {
   }
   const file = request.files.file;
   const stream = Readable.from(file.data);
-     folderId = '1IDyTgGy4Lajl3eZEV55PHHOZ6q034tgU';
+     folderId = PARENT_FOLDER_ID;
       const fileMetadata = {
           name: uuid.v4()+'sample',
           parents:[folderId]
@@ -176,10 +177,12 @@ const  upload = async (request, response) => {
   }
 
 }
-
-app.listen(3000,function(error) {
+app.use(fileUpload({ 
+  limits: { fileSize: 1 * 1024 * 1024 }, //1MB max file(s) size
+}))
+app.listen(PORT,function(error) {
   if(error) throw error
-      console.log("Server created Successfully on PORT 3000")
+      console.log(`Server created Successfully on PORT ${PORT}`);
 })
 
 app.get('/search-by-name',searchByName);
@@ -190,8 +193,6 @@ app.get('/download-image',downloadImage);
 app.get('/details',details);
 app.delete('/delete',deleteMethod);
 
-app.use(fileUpload({ 
-   limits: { fileSize: 1 * 1024 * 1024 }, //1MB max file(s) size
- }))
+
 
 app.post('/upload', upload);
